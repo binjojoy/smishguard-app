@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#EEEEEE"
+        android:elevation="4dp"
+        android:padding="12dp">
+
+        <Button
+            android:id="@+id/btnRunScan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔍 Start Forensic Audit"
+            android:backgroundTint="#1976D2"
+            android:textColor="#FFFFFF" />
+
+        <RadioGroup
+            android:id="@+id/filterGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:layout_marginTop="8dp"
+            android:weightSum="3">
+
+            <RadioButton android:id="@+id/rbShowAll" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="All" android:checked="true" />
+            <RadioButton android:id="@+id/rbShowScams" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Scams" android:textColor="#D32F2F" />
+            <RadioButton android:id="@+id/rbShowSafe" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Safe" android:textColor="#388E3C" />
+        </RadioGroup>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:weightSum="2">
+
+            <TextView
+                android:id="@+id/tvNormalCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Normal: 0"
+                android:textColor="#2E7D32"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvScamCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Scams: 0"
+                android:textColor="#C62828"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="📥 SmishGuard Inbox"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <ListView
+        android:id="@+id/smsListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp"
+        android:divider="#DDDDDD"
+        android:dividerHeight="1dp" />
+
+</LinearLayout>
