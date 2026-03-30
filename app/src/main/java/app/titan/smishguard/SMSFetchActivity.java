@@ -2,81 +2,136 @@ package app.titan.smishguard;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.net.Uri;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.ListView;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 
 public class SMSFetchActivity extends AppCompatActivity {
 
     private static final int PERMISSION_REQUEST_CODE = 101;
-    private ListView listView;
-    private ArrayList<String> smsList = new ArrayList<>();
-    private SmishEngine engine; // Declare Engine
+
+    // UI Elements for Bottom Nav
+    private LinearLayout navHome, navHistory, navInsights;
+    private ImageView ivHome, ivHistory, ivInsights;
+    private TextView tvHome, tvHistory, tvInsights;
+
+    // Colors
+    private final int colorActive = Color.parseColor("#004D5F");
+    private final int colorInactive = Color.parseColor("#94A3B8");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sms_fetch);
 
-        listView = findViewById(R.id.smsListView);
-        engine = new SmishEngine(); // Initialize Engine
+        initializeBottomNav();
+        ImageButton btnSettings = findViewById(R.id.btn_settings);
+        btnSettings.setOnClickListener(v -> {
+            Toast.makeText(this, "Settings Clicked!", Toast.LENGTH_SHORT).show();
+        });
 
+        // Start by checking permissions
         checkAndRequestPermissions();
     }
 
-    private void fetchSMS() {
-        smsList.clear();
-        // try-with-resources ensures cursor is closed automatically
-        try (Cursor cursor = getContentResolver().query(
-                Uri.parse("content://sms/inbox"),
-                null, null, null, "date DESC"
-        )) {
-            if (cursor != null && cursor.moveToFirst()) {
-                int indexBody = cursor.getColumnIndexOrThrow("body");
-                int indexAddress = cursor.getColumnIndexOrThrow("address");
-                do {
-                    smsList.add("From: " + cursor.getString(indexAddress) + "\n" + cursor.getString(indexBody));
-                } while (cursor.moveToNext());
-            }
-        } catch (Exception e) {
-            Log.e("SmishGuard", "Cursor error: " + e.getMessage());
+    private void initializeBottomNav() {
+        // Layouts
+        navHome = findViewById(R.id.nav_home);
+        navHistory = findViewById(R.id.nav_history);
+        navInsights = findViewById(R.id.nav_insights);
+
+        // Icons
+        ivHome = findViewById(R.id.iv_home);
+        ivHistory = findViewById(R.id.iv_history);
+        ivInsights = findViewById(R.id.iv_insights);
+
+        // Texts
+        tvHome = findViewById(R.id.tv_home);
+        tvHistory = findViewById(R.id.tv_history);
+        tvInsights = findViewById(R.id.tv_insights);
+
+        // Click Listeners
+        navHome.setOnClickListener(v -> selectTab(1));
+        navHistory.setOnClickListener(v -> selectTab(2));
+        navInsights.setOnClickListener(v -> selectTab(3));
+
+        // Set Home as default active tab
+        updateBottomNavUI(1);
+    }
+
+    // Inside selectTab(int index)
+    private void selectTab(int index) {
+        updateBottomNavUI(index);
+
+        Fragment selectedFragment = null;
+        switch (index) {
+            case 1:
+                selectedFragment = new HomeFragment();
+                break;
+            case 2:
+                // selectedFragment = new HistoryFragment(); // Create later
+                break;
+            case 3:
+                // selectedFragment = new InsightsFragment(); // Create later
+                break;
         }
 
-        listView.setAdapter(new SMSAdapter(this, smsList));
-
-        // 🔥 TRIGGER API TEST CALL
-        runApiTest();
+        if (selectedFragment != null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, selectedFragment)
+                    .commit();
+        }
     }
 
-    private void runApiTest() {
-        String testText = "Hello Binjo";
+    private void updateBottomNavUI(int activeIndex) {
+        // 1. Reset all to Inactive
+        navHome.setBackground(null);
+        navHistory.setBackground(null);
+        navInsights.setBackground(null);
 
-        engine.checkMessage(testText, new SmishEngine.ApiCallback() {
-            @Override
-            public void onSuccess(SmishApiModels.SmishResponse result) {
-                String logMsg = "API Success! Phishing: " + result.isPhishing + " | Score: " + result.finalRiskScore;
-                Log.d("SmishGuard", logMsg);
-                Toast.makeText(SMSFetchActivity.this, logMsg, Toast.LENGTH_LONG).show();
-            }
+        ivHome.setImageTintList(ColorStateList.valueOf(colorInactive));
+        ivHistory.setImageTintList(ColorStateList.valueOf(colorInactive));
+        ivInsights.setImageTintList(ColorStateList.valueOf(colorInactive));
 
-            @Override
-            public void onError(String error) {
-                Log.e("SmishGuard", "API Failure: " + error);
-                Toast.makeText(SMSFetchActivity.this, "API Failed: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
+        tvHome.setTextColor(colorInactive);
+        tvHistory.setTextColor(colorInactive);
+        tvInsights.setTextColor(colorInactive);
+
+        // 2. Set Active Tab
+        switch (activeIndex) {
+            case 1:
+                navHome.setBackgroundResource(R.drawable.nav_item_active_bg);
+                ivHome.setImageTintList(ColorStateList.valueOf(colorActive));
+                tvHome.setTextColor(colorActive);
+                break;
+            case 2:
+                navHistory.setBackgroundResource(R.drawable.nav_item_active_bg);
+                ivHistory.setImageTintList(ColorStateList.valueOf(colorActive));
+                tvHistory.setTextColor(colorActive);
+                break;
+            case 3:
+                navInsights.setBackgroundResource(R.drawable.nav_item_active_bg);
+                ivInsights.setImageTintList(ColorStateList.valueOf(colorActive));
+                tvInsights.setTextColor(colorActive);
+                break;
+        }
     }
 
-    // ... Keep your checkAndRequestPermissions() and onRequestPermissionsResult() as they were ...
+    // --- Keep your Permission methods below ---
 
     private void checkAndRequestPermissions() {
         ArrayList<String> permissionsNeeded = new ArrayList<>();
@@ -95,8 +150,6 @@ public class SMSFetchActivity extends AppCompatActivity {
 
         if (!listPermissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
-        } else {
-            fetchSMS();
         }
     }
 
@@ -104,9 +157,7 @@ public class SMSFetchActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                fetchSMS();
-            }
+            // Logic handled if needed
         }
     }
 }
