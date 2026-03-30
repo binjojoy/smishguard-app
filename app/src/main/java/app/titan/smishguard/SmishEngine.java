@@ -2,6 +2,7 @@ package app.titan.smishguard;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import com.google.android.gms.tflite.java.TfLite;
 import org.tensorflow.lite.Interpreter;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -9,67 +10,104 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.android.gms.tflite.java.TfLite; // This is the main GMS TFLite class
-import com.google.android.gms.tasks.Task; // Required for the "Task" based loading
-import org.tensorflow.lite.Interpreter;
-
 public class SmishEngine {
     private Interpreter interpreter;
-    private Map<String, Integer> vocabData = new HashMap<>();
-    private final int MAX_LEN = 200;
+    private final Map<String, Integer> vocabData = new HashMap<>();
 
-    // Forensic Constants (Ported from your Python script)
+    // Constants from android_config.json
+    private final int MAX_LEN = 120;
+    private final float SCAM_THRESHOLD = 0.05744f;
+
+    // Forensic Constants for Hybrid Analysis
     private final String[] SUSPICIOUS_TLDS = {".xyz", ".top", ".club", ".ru", ".cn", ".live", ".click", ".link", ".cam"};
     private final String[] KNOWN_BRANDS = {"sbi", "hdfc", "icici", "axis", "netflix", "disney", "fedex", "ups", "amazon"};
 
-    public SmishEngine(Context context) throws IOException {
-        // This tells the phone: "Hey, make sure you have the latest AI math ready"
+    public SmishEngine(Context context) {
+        // Initialize TFLite via Google Play Services to handle newer model opcodes
         TfLite.initialize(context).addOnSuccessListener(aVoid -> {
             try {
-                // ONLY load the model once the phone says it's ready
                 Interpreter.Options options = new Interpreter.Options();
-                interpreter = new Interpreter(loadModelFile(context, "engine.tflite"), options);
+                // Ensure this filename matches your assets folder exactly
+                interpreter = new Interpreter(loadModelFile(context, "engine1.tflite"), options);
                 loadVocab(context, "vocab.txt");
-                android.util.Log.d("SmishGuard", "✅ AI is now online!");
+                android.util.Log.d("SmishGuard", "✅ AI Engine Online (GMS Runtime)");
             } catch (Exception e) {
-                e.printStackTrace();
+                android.util.Log.e("SmishGuard", "❌ Model Load Error: " + e.getMessage());
             }
         });
     }
 
-    // --- PIPELINE A: PREPROCESSING & AI ---
+    /**
+     * Pipeline A: Preprocessing based on config steps 1-9
+     */
     private String preprocess(String text) {
-        text = text.toLowerCase().trim();
-        // Homoglyph cleaning (@ -> a, etc.)
-        text = text.replace("@", "a").replace("3", "e").replace("0", "o").replace("1", "l").replace("5", "s");
-        // Token Replacement
-        text = text.replaceAll("https?://\\S+|www\\.\\S+", " url_token ");
-        text = text.replaceAll("\\b[\\d\\-\\.\\(\\)\\s]{9,}\\b", " phone_token ");
-        text = text.replaceAll("[\\$\\£\\€\\u20b9][\\s\\d,\\.]+", " money_token ");
-        return text.replaceAll("\\s+", " ").trim();
+        // 1. Lowercase
+        String processed = text.toLowerCase().trim();
+
+        // 2 & 8. Homoglyph normalization
+        processed = processed.replace("@", "a").replace("3", "e").replace("0", "o")
+                .replace("1", "l").replace("5", "s").replace("!", "i");
+
+        // 3, 4, 5. Token Replacement (matching config token names)
+        processed = processed.replaceAll("https?://\\S+|www\\.\\S+", " url_token ");
+        processed = processed.replaceAll("\\b[\\d\\-\\.\\(\\)\\s]{9,}\\b", " phone_token ");
+        processed = processed.replaceAll("[\\$\\u20b9£€]\\d+", " money_token ");
+
+        // 6 & 7. Segmentation (Replace dots and hyphens with spaces)
+        processed = processed.replace(".", " ").replace("-", " ");
+
+        // 9. Whitespace normalize
+        return processed.replaceAll("\\s+", " ").trim();
     }
 
+    /**
+     * Pipeline A: AI Inference with Bigram Support (ngrams: 2)
+     */
     public float getAiScore(String text) {
-        int[][] input = new int[1][MAX_LEN];
+        if (interpreter == null) return 0f;
+
         String clean = preprocess(text);
         String[] words = clean.split("\\s+");
-        for (int i = 0; i < MAX_LEN; i++) {
-            if (i < words.length) {
-                Integer id = vocabData.get(words[i]);
-                input[0][i] = (id != null) ? id : 1;
-            } else { input[0][i] = 0; }
+        ArrayList<Integer> tokens = new ArrayList<>();
+
+        // 10. Vocab Lookup: Unigrams and Bigrams
+        for (int i = 0; i < words.length; i++) {
+            // Add Unigram
+            tokens.add(vocabData.getOrDefault(words[i], 1)); // 1 is UNK_INDEX
+
+            // Add Bigram (if context exists)
+            if (i < words.length - 1) {
+                String bigram = words[i] + " " + words[i + 1];
+                if (vocabData.containsKey(bigram)) {
+                    tokens.add(vocabData.get(bigram));
+                }
+            }
         }
+
+        // 11. Pad or Truncate to exactly MAX_LEN (120)
+        int[][] inputIds = new int[1][MAX_LEN];
+        for (int i = 0; i < MAX_LEN; i++) {
+            if (i < tokens.size()) {
+                inputIds[0][i] = tokens.get(i);
+            } else {
+                inputIds[0][i] = 0; // 0 is PAD_INDEX
+            }
+        }
+
         float[][] output = new float[1][1];
-        interpreter.run(input, output);
-        return output[0][0] * 100f; // Return 0-100 scale
+        interpreter.run(inputIds, output);
+        return output[0][0]; // Probability (0.0 to 1.0)
     }
 
-    // --- PIPELINE B: FORENSICS ---
+    /**
+     * Pipeline B: Forensics (Entropy calculation)
+     */
     private double calculateEntropy(String domain) {
         if (domain == null || domain.isEmpty()) return 0;
         Map<Character, Integer> counts = new HashMap<>();
@@ -82,26 +120,27 @@ public class SmishEngine {
         return entropy;
     }
 
-    // --- THE FUSION ENGINE ---
+    /**
+     * The Fusion Engine: Combines AI and Forensic signals
+     */
     public SmishResult analyze(String text) {
-        float aiScore = getAiScore(text);
+        float rawAiScore = getAiScore(text); // 0.0 to 1.0
+        float aiScorePercent = rawAiScore * 100f;
         float forensicScore = 0f;
-        String mode = "AI Only";
+        String mode = "Hybrid Consensus";
         boolean isCritical = false;
 
-        // URL Extraction
+        // URL Forensic Extraction
         Pattern urlPattern = Pattern.compile("https?://(\\S+)");
         Matcher matcher = urlPattern.matcher(text);
 
         if (matcher.find()) {
             String domain = matcher.group(1).toLowerCase();
 
-            // 1. Entropy Check
-            if (calculateEntropy(domain) > 3.9) {
-                forensicScore += 35f;
-            }
+            // 1. High Entropy check (random-looking domains)
+            if (calculateEntropy(domain) > 3.9) forensicScore += 35f;
 
-            // 2. TLD Check
+            // 2. Suspicious TLD check
             for (String tld : SUSPICIOUS_TLDS) {
                 if (domain.contains(tld)) {
                     forensicScore += 45f;
@@ -109,7 +148,7 @@ public class SmishEngine {
                 }
             }
 
-            // 3. Brand Mismatch (The SBI Fix)
+            // 3. Brand Mismatch check
             for (String brand : KNOWN_BRANDS) {
                 if (text.toLowerCase().contains(brand) && !domain.contains(brand)) {
                     forensicScore += 75f;
@@ -119,42 +158,46 @@ public class SmishEngine {
             }
         }
 
-        // FUSION LOGIC (Ported from your Python logic)
+        // Fusion Logic
         float finalScore;
         if (isCritical) {
             finalScore = 100f;
             mode = "Forensic Override (Critical)";
-        } else if (forensicScore >= 50) {
-            finalScore = (forensicScore * 0.65f) + (aiScore * 0.35f);
-            mode = "Forensic Dominant";
         } else {
-            finalScore = (aiScore * 0.5f) + (forensicScore * 0.5f);
-            mode = "Hybrid Consensus";
+            // Weighted average: 50% AI, 50% Forensics
+            finalScore = (aiScorePercent * 0.5f) + (forensicScore * 0.5f);
         }
 
-        return new SmishResult(finalScore >= 45.0, finalScore, mode);
+        // Use the threshold from config (approx 5.74%)
+        boolean isPhishing = finalScore >= (SCAM_THRESHOLD * 100f);
+        return new SmishResult(isPhishing, finalScore, mode);
     }
 
-    // Standard TFLite Loaders
     private MappedByteBuffer loadModelFile(Context context, String name) throws IOException {
         AssetFileDescriptor fd = context.getAssets().openFd(name);
-        return new FileInputStream(fd.getFileDescriptor()).getChannel().map(FileChannel.MapMode.READ_ONLY, fd.getStartOffset(), fd.getDeclaredLength());
+        FileInputStream fis = new FileInputStream(fd.getFileDescriptor());
+        return fis.getChannel().map(FileChannel.MapMode.READ_ONLY, fd.getStartOffset(), fd.getDeclaredLength());
     }
 
     private void loadVocab(Context context, String name) throws IOException {
         BufferedReader r = new BufferedReader(new InputStreamReader(context.getAssets().open(name)));
-        String l; int i = 0;
-        while ((l = r.readLine()) != null) vocabData.put(l.trim(), i++);
+        String line;
+        int index = 0;
+        while ((line = r.readLine()) != null) {
+            vocabData.put(line.trim(), index++);
+        }
         r.close();
     }
 
-    // Simple Result Wrapper
     public static class SmishResult {
         public boolean isPhishing;
         public float score;
         public String mode;
-        public SmishResult(boolean p, float s, String m) {
-            this.isPhishing = p; this.score = s; this.mode = m;
+
+        public SmishResult(boolean isPhishing, float score, String mode) {
+            this.isPhishing = isPhishing;
+            this.score = score;
+            this.mode = mode;
         }
     }
 }

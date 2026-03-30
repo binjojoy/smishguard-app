@@ -8,9 +8,9 @@ material = "1.13.0"
 activity = "1.9.3"
 constraintlayout = "2.2.1"
 coreKtx = "1.15.0"
-tensorflowLite = "2.16.1"
-tensorflowLiteSupport = "0.4.4"
+# Match your specific TFLite requirements
 tfliteGms = "16.1.0"
+tensorflowLite = "2.16.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -21,12 +21,12 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+
+# The full library for the compiler symbols
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
-tensorflow-lite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
-tensorflow-lite-select-tf-ops = { group = "org.tensorflow", name = "tensorflow-lite-select-tf-ops", version.ref = "tensorflowLite" }
-play-tflite = { group = "com.google.android.gms", name = "play-services-tflite-java", version.ref = "tfliteGms" }
+# The GMS runtimes for the phone engine
+tensorflow-lite-gms = { group = "com.google.android.gms", name = "play-services-tflite-java", version.ref = "tfliteGms" }
+tensorflow-lite-gms-support = { group = "com.google.android.gms", name = "play-services-tflite-support", version.ref = "tfliteGms" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-
-
