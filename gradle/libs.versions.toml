@@ -8,9 +8,11 @@ material = "1.13.0"
 activity = "1.9.3"
 constraintlayout = "2.2.1"
 coreKtx = "1.15.0"
-# Match your specific TFLite requirements
-tfliteGms = "16.1.0"
+
+# TensorFlow Lite Versions
+# Using 2.16.1 for the API and 16.1.0 for the GMS Runtime
 tensorflowLite = "2.16.1"
+tfliteGms = "16.1.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -22,9 +24,12 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 
-# The full library for the compiler symbols
+# --- THE FIX ---
+# This provides the 'Interpreter' and 'Options' classes (the symbols)
+# so they are physically included in your APK.
+#tensorflow-lite-api = { group = "org.tensorflow", name = "tensorflow-lite-api", version.ref = "tensorflowLite" }
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
-# The GMS runtimes for the phone engine
+# The GMS runtimes (the actual math engine) that live on the phone
 tensorflow-lite-gms = { group = "com.google.android.gms", name = "play-services-tflite-java", version.ref = "tfliteGms" }
 tensorflow-lite-gms-support = { group = "com.google.android.gms", name = "play-services-tflite-support", version.ref = "tfliteGms" }
 

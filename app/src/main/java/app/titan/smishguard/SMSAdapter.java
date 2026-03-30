@@ -19,30 +19,24 @@ public class SMSAdapter extends ArrayAdapter<String> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        String fullSms = getItem(position);
+        String messageWithMarker = getItem(position);
 
         if (convertView == null) {
-            // Corrected: Uses the system layout resource (R.layout)
             convertView = LayoutInflater.from(getContext()).inflate(android.R.layout.simple_list_item_1, parent, false);
         }
 
-// Then you find the TextView inside that layout
         TextView tv = convertView.findViewById(android.R.id.text1);
-        tv.setText(fullSms);
-        tv.setPadding(30, 40, 30, 40); // Makes it look professional
-        tv.setTextSize(14);
+        tv.setText(messageWithMarker);
+        tv.setPadding(30, 40, 30, 40);
 
-        // UI Logic based on the markers added in SMSFetchActivity
-        if (fullSms.contains("🔴")) {
-            // Light red background for scams
-            convertView.setBackgroundColor(Color.parseColor("#FFF1F0"));
+        // FIX: Only color based on the marker added by the Activity
+        if (messageWithMarker != null && messageWithMarker.contains("🔴")) {
+            convertView.setBackgroundColor(Color.parseColor("#FFF1F0")); // Soft Red
             tv.setTextColor(Color.parseColor("#D32F2F"));
-        } else if (fullSms.contains("🟢")) {
-            // Light green background for safe messages
-            convertView.setBackgroundColor(Color.parseColor("#F6FFED"));
+        } else if (messageWithMarker != null && messageWithMarker.contains("🟢")) {
+            convertView.setBackgroundColor(Color.parseColor("#F6FFED")); // Soft Green
             tv.setTextColor(Color.parseColor("#388E3C"));
         } else {
-            // Default view before the scan is run
             convertView.setBackgroundColor(Color.WHITE);
             tv.setTextColor(Color.BLACK);
         }

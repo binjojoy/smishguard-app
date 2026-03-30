@@ -5,69 +5,91 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ListView;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import java.util.ArrayList;
 
 public class SMSFetchActivity extends AppCompatActivity {
 
     private static final int SMS_PERMISSION_CODE = 101;
+
     private ListView listView;
-
-    // 1. CLASS LEVEL VARIABLES
-    // These hold your data across the entire activity lifecycle
-    private ArrayList<String> smsList = new ArrayList<>();
-    private ArrayList<String> scamList = new ArrayList<>();
-    private ArrayList<String> safeList = new ArrayList<>();
-
-    private SmishEngine engine;
     private RadioGroup filterGroup;
     private Button btnRunScan;
     private TextView tvNormalCount, tvScamCount;
+
+    private ArrayList<String> originalSmsList = new ArrayList<>();
+    private ArrayList<String> scannedResults = new ArrayList<>();
+    private ArrayList<String> filteredScams = new ArrayList<>();
+
+    private SmishEngine engine;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sms_fetch);
 
-        // 2. LINK UI ELEMENTS
         listView = findViewById(R.id.smsListView);
         filterGroup = findViewById(R.id.filterGroup);
         btnRunScan = findViewById(R.id.btnRunScan);
         tvNormalCount = findViewById(R.id.tvNormalCount);
         tvScamCount = findViewById(R.id.tvScamCount);
 
-        // 3. INITIALIZE THE AI ENGINE
-        // Note: The new engine initializes asynchronously via Google Play Services
+        // Disable button initially
+        btnRunScan.setEnabled(false);
+        btnRunScan.setText("Initializing AI Engine...");
+
+        // Initialize engine
         engine = new SmishEngine(this);
 
-        // 4. SETUP SCAN BUTTON
+        // 🔥 Check readiness in background (simple polling)
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                if (engine != null && engine.isReady()) {
+                    Log.d("SmishGuard", "✅ Engine READY in Activity");
+
+                    btnRunScan.setEnabled(true);
+                    btnRunScan.setText("Start Forensic Audit");
+
+                    Toast.makeText(SMSFetchActivity.this, "AI Engine Ready!", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    Log.d("SmishGuard", "⏳ Engine NOT ready yet...");
+                    // Retry after 1 sec
+                    new Handler().postDelayed(this, 1000);
+                }
+            }
+        }, 1000);
+
         btnRunScan.setOnClickListener(v -> runBulkScan());
 
-        // 5. CHECK PERMISSIONS
+        // Permission check
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_CODE);
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.READ_SMS},
+                    SMS_PERMISSION_CODE
+            );
+
         } else {
             fetchSMS();
         }
     }
 
-    /**
-     * Queries the Android SMS Content Provider and populates the main list.
-     */
     private void fetchSMS() {
-        // Clear the class-level list to avoid duplicates on refresh
-        smsList.clear();
+        originalSmsList.clear();
 
         Cursor cursor = getContentResolver().query(
                 Uri.parse("content://sms/inbox"),
@@ -78,90 +100,97 @@ public class SMSFetchActivity extends AppCompatActivity {
         );
 
         if (cursor != null && cursor.moveToFirst()) {
-            int indexBody = cursor.getColumnIndex("body");
-            int indexAddress = cursor.getColumnIndex("address");
+
+            int indexBody = cursor.getColumnIndexOrThrow("body");
+            int indexAddress = cursor.getColumnIndexOrThrow("address");
+
             do {
-                String address = cursor.getString(indexAddress);
-                String body = cursor.getString(indexBody);
-                smsList.add("From: " + address + "\n" + body);
+                originalSmsList.add(
+                        "From: " + cursor.getString(indexAddress) +
+                                "\n" + cursor.getString(indexBody)
+                );
             } while (cursor.moveToNext());
+
             cursor.close();
         }
 
-        // Show the initial "All Messages" view
-        updateListView(smsList);
+        updateListView(originalSmsList);
     }
 
-    /**
-     * The Bulk Scan (Audit Mode) logic.
-     * Iterates through all messages and classifies them using the Hybrid Engine.
-     */
     private void runBulkScan() {
-        // Safety check: Ensure engine has finished loading from GMS
+
+        Log.d("SmishGuard", "🔍 Scan button clicked");
+
         if (engine == null) {
-            Toast.makeText(this, "AI Engine is waking up... try again in a second", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Engine not initialized!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        scamList.clear();
-        safeList.clear();
-
-        if (smsList.isEmpty()) {
-            Toast.makeText(this, "No messages found to scan.", Toast.LENGTH_SHORT).show();
+        if (!engine.isReady()) {
+            Toast.makeText(this, "AI Engine not ready yet!", Toast.LENGTH_SHORT).show();
+            Log.e("SmishGuard", "❌ Engine NOT READY at scan time");
             return;
         }
 
-        // Iterate through all messages currently in the inbox list
-        for (String fullSms : smsList) {
-            // Run the Hybrid N-gram Analysis (AI + Forensics)
-            SmishEngine.SmishResult result = engine.analyze(fullSms);
+        scannedResults.clear();
+        filteredScams.clear();
+
+        int scamCount = 0;
+
+        for (String sms : originalSmsList) {
+
+            SmishEngine.SmishResult result = engine.analyze(sms);
 
             if (result.isPhishing) {
-                // Prepend a tag for the UI
-                scamList.add("🔴 [FLAGGED: " + String.format("%.1f", result.score) + "%]\n" + fullSms);
+                String tagged = "🔴 [SCAM: " +
+                        String.format("%.1f", result.score) +
+                        "%]\n" + sms;
+
+                scannedResults.add(tagged);
+                filteredScams.add(tagged);
+                scamCount++;
+
             } else {
-                safeList.add("🟢 [SAFE]\n" + fullSms);
+                scannedResults.add("🟢 [SAFE]\n" + sms);
             }
         }
 
-        // 6. UPDATE UI WITH RESULTS
-        if (tvNormalCount != null) tvNormalCount.setText("Normal: " + safeList.size());
-        if (tvScamCount != null) tvScamCount.setText("Scams: " + scamList.size());
+        tvScamCount.setText("Scams: " + scamCount);
+        tvNormalCount.setText("Safe: " + (scannedResults.size() - scamCount));
 
-        // Make the filter options visible now that the scan is done
         filterGroup.setVisibility(View.VISIBLE);
 
-        // Handle the RadioButton filtering logic
         filterGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbShowScams) {
-                updateListView(scamList);
-            } else if (checkedId == R.id.rbShowSafe) {
-                updateListView(safeList);
+                updateListView(filteredScams);
             } else {
-                // Show original list
-                updateListView(smsList);
+                updateListView(scannedResults);
             }
         });
 
-        Toast.makeText(this, "Audit Complete! Found " + scamList.size() + " threats.", Toast.LENGTH_LONG).show();
+        updateListView(scannedResults);
+
+        Toast.makeText(this, "Audit Complete!", Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * Refreshes the ListView using the custom SMSAdapter.
-     */
     private void updateListView(ArrayList<String> data) {
-        // Passing 'engine' to the adapter allows for dynamic row coloring/score display
         SMSAdapter adapter = new SMSAdapter(this, data, engine);
         listView.setAdapter(adapter);
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == SMS_PERMISSION_CODE && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+        if (requestCode == SMS_PERMISSION_CODE &&
+                grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
             fetchSMS();
-        } else {
-            Toast.makeText(this, "Permission denied! SmishGuard cannot read your inbox.", Toast.LENGTH_LONG).show();
         }
     }
 }
