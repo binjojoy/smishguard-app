@@ -7,16 +7,16 @@
 
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
         android:theme="@style/Theme.SmishGuard">
-
-        <meta-data
-            android:name="com.google.android.gms.tflite_dynamite_module_version"
-            android:value="2" />
 
         <activity
             android:name=".SMSFetchActivity"
@@ -26,5 +26,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".SMSReceiver"
+            android:enabled="true"
+            android:exported="true"> <intent-filter android:priority="999">
+            <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            <action android:name="app.titan.smishguard.TEST_SMS" />
+        </intent-filter>
+        </receiver>
+
     </application>
 </manifest>

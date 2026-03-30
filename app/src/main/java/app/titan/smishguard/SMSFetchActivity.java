@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -15,7 +16,7 @@ import java.util.ArrayList;
 
 public class SMSFetchActivity extends AppCompatActivity {
 
-    private static final int SMS_PERMISSION_CODE = 101;
+    private static final int PERMISSION_REQUEST_CODE = 101;
     private ListView listView;
     private ArrayList<String> smsList = new ArrayList<>();
 
@@ -26,11 +27,34 @@ public class SMSFetchActivity extends AppCompatActivity {
 
         listView = findViewById(R.id.smsListView);
 
-        // Check for SMS permissions immediately on launch
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_CODE);
+        checkAndRequestPermissions();
+    }
+
+    private void checkAndRequestPermissions() {
+        // Build the list of permissions needed
+        ArrayList<String> permissionsNeeded = new ArrayList<>();
+        permissionsNeeded.add(Manifest.permission.READ_SMS);
+        permissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
+
+        // Add Notification permission only for Android 13 (API 33) and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+
+        // Filter out permissions we already have
+        ArrayList<String> listPermissionsNeeded = new ArrayList<>();
+        for (String perm : permissionsNeeded) {
+            if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
+                listPermissionsNeeded.add(perm);
+            }
+        }
+
+        if (!listPermissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(this,
+                    listPermissionsNeeded.toArray(new String[0]),
+                    PERMISSION_REQUEST_CODE);
         } else {
+            // We have all permissions, proceed to fetch
             fetchSMS();
         }
     }
@@ -58,10 +82,27 @@ public class SMSFetchActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == SMS_PERMISSION_CODE && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            fetchSMS();
-        } else {
-            Toast.makeText(this, "Permission denied to read SMS", Toast.LENGTH_SHORT).show();
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                fetchSMS();
+            } else {
+                // At least check if READ_SMS was granted to show the list
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+                    fetchSMS();
+                    Toast.makeText(this, "Some features (background alerts) may not work.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "SMS Permission is required to show the inbox.", Toast.LENGTH_LONG).show();
+                }
+            }
         }
     }
 }
