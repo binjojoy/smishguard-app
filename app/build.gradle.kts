@@ -40,6 +40,9 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
 
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+
     // Testing Libraries
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
