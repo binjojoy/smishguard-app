@@ -45,7 +45,9 @@ public class SMSFetchActivity extends AppCompatActivity {
         });
 
         // Start by checking permissions
-        checkAndRequestPermissions();
+        if (checkAndRequestPermissions()) {
+            selectTab(1); // <--- This fixes the white screen
+        }
     }
 
     private void initializeBottomNav() {
@@ -133,10 +135,11 @@ public class SMSFetchActivity extends AppCompatActivity {
 
     // --- Keep your Permission methods below ---
 
-    private void checkAndRequestPermissions() {
+    private boolean checkAndRequestPermissions() {
         ArrayList<String> permissionsNeeded = new ArrayList<>();
         permissionsNeeded.add(Manifest.permission.READ_SMS);
         permissionsNeeded.add(Manifest.permission.RECEIVE_SMS);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
         }
@@ -149,15 +152,25 @@ public class SMSFetchActivity extends AppCompatActivity {
         }
 
         if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this,
+                    listPermissionsNeeded.toArray(new String[0]),
+                    PERMISSION_REQUEST_CODE);
+            return false; // Permissions not granted yet
         }
+
+        return true; // All good, ready to load
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            // Logic handled if needed
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // User just gave permission, load Home now!
+                selectTab(1);
+            } else {
+                Toast.makeText(this, "Permission denied. App won't work properly.", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
