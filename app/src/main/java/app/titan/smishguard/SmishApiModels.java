@@ -2,28 +2,46 @@ package app.titan.smishguard;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
 
 public class SmishApiModels {
 
-    // Request Object
+    // 1. THE REQUEST OBJECT
     public static class SmishRequest {
-        public String text;
+        String text;
         public SmishRequest(String text) { this.text = text; }
     }
 
-    // Response Object
+    // 2. THE RESPONSE OBJECT
     public static class SmishResponse {
-        @SerializedName("is_phishing") public boolean isPhishing;
-        @SerializedName("final_risk_score") public String finalRiskScore;
-        @SerializedName("ai_score") public String aiScore;
-        @SerializedName("logic_mode") public String logicMode;
-        @SerializedName("link_warnings") public String linkWarnings;
+        @SerializedName("is_phishing")
+        public boolean isPhishing;
+
+        @SerializedName("final_risk_score")
+        public String finalRiskScore;
+
+        @SerializedName("logic_mode")
+        public String logicMode;
+
+        @SerializedName("link_warnings")
+        public String linkWarnings;
+
+        // THIS WAS THE MISSING PIECE
+        @SerializedName("entities_detected")
+        public List<String> entitiesDetected;
+
+        @SerializedName("ai_score")
+        public String aiScore;
+
+        @SerializedName("forensic_score")
+        public String forensicScore;
     }
 
-    // Retrofit Interface
+    // 3. THE RETROFIT INTERFACE
     public interface SmishService {
-        @androidx.annotation.NonNull
-        @retrofit2.http.POST("predict")
-        retrofit2.Call<SmishResponse> getPrediction(@retrofit2.http.Body SmishRequest request);
+        @POST("predict")
+        Call<SmishResponse> getPrediction(@Body SmishRequest request);
     }
 }
