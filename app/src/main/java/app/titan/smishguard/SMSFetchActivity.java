@@ -85,7 +85,7 @@ public class SMSFetchActivity extends AppCompatActivity {
                 selectedFragment = new HomeFragment();
                 break;
             case 2:
-                // selectedFragment = new HistoryFragment(); // Create later
+                selectedFragment = new HistoryFragment(); // Create later
                 break;
             case 3:
                 // selectedFragment = new InsightsFragment(); // Create later
