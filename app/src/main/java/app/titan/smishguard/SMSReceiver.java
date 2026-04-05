@@ -69,7 +69,7 @@ public class SMSReceiver extends BroadcastReceiver {
                 } catch (Exception e) { Log.e("SmishGuard", "Score parse error"); }
 
                 // Check for the "Orange" Suspicious zone
-                if (!result.isPhishing && (score > 20 || (result.linkWarnings != null && !result.linkWarnings.contains("No anomalies")))) {
+                if (!result.isPhishing && (score > 40 || (result.linkWarnings != null && !result.linkWarnings.contains("No anomalies")))) {
                     verdictType = "SUSPICIOUS";
                 }
 

@@ -126,7 +126,7 @@ public class SMSFetchActivity extends AppCompatActivity {
         AlertDialog dialog = new AlertDialog.Builder(this).setView(v).create();
         if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-        // View Bindings
+        // 1. View Bindings
         TextView tvTitle = v.findViewById(R.id.tvPopupTitle);
         TextView tvAnalysis = v.findViewById(R.id.tvAnalysisWhy);
         TextView tvAi = v.findViewById(R.id.tvAiScore);
@@ -136,8 +136,10 @@ public class SMSFetchActivity extends AppCompatActivity {
         ImageView ivIcon = v.findViewById(R.id.ivStatusIcon);
         MaterialCardView cvIconBg = v.findViewById(R.id.cvStatusIconBg);
 
+        // 2. Data Preparation
         int ai = normalizeScore(result.aiScore);
         int forensic = normalizeScore(result.forensicScore);
+        int finalRisk = normalizeScore(result.finalRiskScore);
 
         tvAi.setText(ai + "/100");
         tvForensic.setText(forensic + "/100");
@@ -145,64 +147,98 @@ public class SMSFetchActivity extends AppCompatActivity {
 
         StringBuilder why = new StringBuilder();
 
-        // LOGIC ENGINE: Determine the "Why"
+        // Determine the user_corrected_label (The opposite of current prediction)
+        // If model says it's phishing (1), the correction is 0 (Safe).
+        // If model says it's not phishing (0), the correction is 1 (Scam).
+        final int userCorrectedLabel = result.isPhishing ? 0 : 1;
+
+        // 3. UI Styling & Detailed Explanation
         if (result.isPhishing) {
+            // --- CASE: SCAM ---
             tvTitle.setText("Threat Identified");
             tvTitle.setTextColor(Color.parseColor("#B91C1C"));
             cvIconBg.setCardBackgroundColor(Color.parseColor("#FEE2E2"));
             ivIcon.setImageResource(android.R.drawable.ic_dialog_alert);
             ivIcon.setColorFilter(Color.parseColor("#B91C1C"));
 
-            // Detailed Analysis Basis
-            why.append("The SmishGuard engine has flagged this communication as high-risk.\n\n");
-            if (ai > 60) why.append("• Linguistic patterns match known phishing templates (Sense of urgency/Financial bait).\n");
-            if (forensic > 40 || !result.linkWarnings.contains("No anomalies")) {
-                why.append("• Forensic check detected suspicious URL routing or non-standard character encoding.\n");
-            }
-            if (result.logicMode.contains("Override")) {
-                why.append("• Security Note: The Forensic engine performed a critical override due to confirmed malicious signatures.");
-            }
+            why.append("🚨 **High Risk Smishing**\n");
+            why.append("• Linguistic patterns match known phishing templates.\n");
+            if (forensic > 40) why.append("• Forensic analysis detected anomalies in metadata or link structures.\n");
 
-            // OPPOSITE ACTION: If predicted SCAM, user can report it is SAFE
             btnFeedback.setText("Report as Safe (False Positive)");
             btnFeedback.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#004D5F")));
+
+        } else if (finalRisk > 40 || (result.linkWarnings != null && !result.linkWarnings.contains("No anomalies"))) {
+            // --- CASE: SUSPICIOUS ---
+            tvTitle.setText("Potential Risk");
+            tvTitle.setTextColor(Color.parseColor("#E65100"));
+            cvIconBg.setCardBackgroundColor(Color.parseColor("#FFF3E0"));
+            ivIcon.setImageResource(android.R.drawable.ic_dialog_info);
+            ivIcon.setColorFilter(Color.parseColor("#E65100"));
+
+            why.append("⚠️ **Suspicious Elements Detected**\n");
+            why.append("• The message content appears safe, but external links or metadata are irregular.\n");
+            why.append("• Analysis: " + result.linkWarnings + "\n");
+            why.append("• Verification Mode: " + result.logicMode);
+
+            btnFeedback.setText("Report as Scam");
+            btnFeedback.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#B91C1C")));
+
         } else {
+            // --- CASE: SAFE ---
             tvTitle.setText("Message Secure");
             tvTitle.setTextColor(Color.parseColor("#004D5F"));
             cvIconBg.setCardBackgroundColor(Color.parseColor("#E0F2F1"));
             ivIcon.setImageResource(R.drawable.ic_shield_check);
             ivIcon.setColorFilter(Color.parseColor("#004D5F"));
 
-            why.append("This message has been verified as safe by the hybrid analysis pipeline.\n\n");
-            why.append("• AI Confidence: High probability of legitimate intent.\n");
-            why.append("• No hidden redirects or forensic anomalies detected in headers.\n");
-            why.append("• Verification Mode: " + result.logicMode);
+            why.append("✅ **Verified Secure**\n");
+            why.append("• Content passed all linguistic and forensic filters.\n");
+            why.append("• Analysis: " + result.logicMode);
 
-            // OPPOSITE ACTION: If predicted SAFE, user can report it is a SCAM
             btnFeedback.setText("Report Missed Scam");
             btnFeedback.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#B91C1C")));
         }
 
         tvAnalysis.setText(why.toString());
 
+        // 4. Feedback Logic (Cloud Sync)
         btnFeedback.setOnClickListener(view -> {
-            Toast.makeText(this, "Reported. Our models will be updated. Thanks for the feedback!", Toast.LENGTH_LONG).show();
-            dialog.dismiss();
+            btnFeedback.setEnabled(false);
+            btnFeedback.setText("Syncing...");
+
+            SmishEngine engine = new SmishEngine();
+            engine.submitReport(message, userCorrectedLabel, finalRisk, new SmishEngine.ReportCallback() {
+                @Override
+                public void onSuccess(String serverMessage) {
+                    Toast.makeText(SMSFetchActivity.this, "✅ " + serverMessage, Toast.LENGTH_LONG).show();
+                    dialog.dismiss();
+                }
+
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(SMSFetchActivity.this, "❌ Sync Failed: " + error, Toast.LENGTH_SHORT).show();
+                    btnFeedback.setEnabled(true);
+                    btnFeedback.setText("Try Again");
+                }
+            });
         });
 
         v.findViewById(R.id.btnDismiss).setOnClickListener(view -> dialog.dismiss());
         dialog.show();
     }
 
+    /**
+     * Normalizes scores from strings like "85%" or "0.85" to an integer 85.
+     */
     private int normalizeScore(String raw) {
         if (raw == null) return 0;
         try {
             double val = Double.parseDouble(raw.replace("%", ""));
-            if (val <= 1.0 && val > 0) val *= 100; // Handle 0.85 vs 85
+            if (val <= 1.0 && val > 0) val *= 100;
             return (int) val;
         } catch (Exception e) { return 0; }
     }
-
     // --- Bottom Nav & Tab Logic ---
 
     private void initializeBottomNav() {

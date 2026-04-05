@@ -41,10 +41,31 @@ public class SmishApiModels {
         @SerializedName("model_version")
         public String modelVersion;
     }
+    public static class ReportRequest {
+        String text;
+        @SerializedName("user_corrected_label") int userCorrectedLabel;
+        @SerializedName("model_score") int modelScore;
+
+        public ReportRequest(String text, int label, int score) {
+            this.text = text;
+            this.userCorrectedLabel = label;
+            this.modelScore = score;
+        }
+    }
+
+    // 5. THE REPORT RESPONSE
+    public static class ReportResponse {
+        public String status;
+        public String message;
+        @SerializedName("recorded_label") int recordedLabel;
+    }
 
     // 3. THE RETROFIT INTERFACE
     public interface SmishService {
         @POST("predict")
         Call<SmishResponse> getPrediction(@Body SmishRequest request);
+
+        @POST("report")
+        Call<ReportResponse> submitReport(@Body ReportRequest request);
     }
 }
