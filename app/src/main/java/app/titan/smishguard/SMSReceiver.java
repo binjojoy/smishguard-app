@@ -104,50 +104,46 @@ public class SMSReceiver extends BroadcastReceiver {
         int color;
         int smallIcon;
         String statusTitle;
-        String securitySummary;
 
-        // Use Title Case for a cleaner, modern look
         if (verdict.equals("SCAM")) {
             statusTitle = "Scam Detected";
-            securitySummary = "High-risk smishing alert";
             color = Color.parseColor("#B71C1C");
             smallIcon = android.R.drawable.ic_dialog_alert;
         } else if (verdict.equals("SUSPICIOUS")) {
             statusTitle = "Suspicious Content";
-            securitySummary = "Potential risk identified";
             color = Color.parseColor("#E65100");
             smallIcon = android.R.drawable.ic_dialog_info;
         } else {
             statusTitle = "Message Verified";
-            securitySummary = "No threats detected";
             color = Color.parseColor("#004D40");
             smallIcon = R.drawable.ic_shield_check;
         }
 
+        // Prepare Intent to pass data to Activity
         Intent intent = new Intent(context, SMSFetchActivity.class);
-        PendingIntent pIntent = PendingIntent.getActivity(context, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        // Convert object to JSON to pass through Intent
+        String resultJson = new com.google.gson.Gson().toJson(result);
+        intent.putExtra("EXTRA_SENDER", sender);
+        intent.putExtra("EXTRA_MESSAGE", message);
+        intent.putExtra("EXTRA_RESULT_JSON", resultJson);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        PendingIntent pIntent = PendingIntent.getActivity(context, (int)System.currentTimeMillis(),
+                intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(smallIcon)
-                .setSubText(securitySummary) // Sentence case for the summary
-                .setContentTitle(statusTitle) // Title case for the title
-                .setContentText("Sender: " + sender)
+                .setContentTitle(statusTitle)
+                .setContentText("From " + sender)
+                .setSubText("Security Alert")
                 .setColor(color)
                 .setColorized(verdict.equals("SCAM"))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                .setAutoCancel(true)
                 .setContentIntent(pIntent)
-                .addAction(new NotificationCompat.Action.Builder(
-                        android.R.drawable.ic_menu_view, "View Analysis", pIntent).build())
+                .setAutoCancel(true)
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .setBigContentTitle(statusTitle)
-                        .setSummaryText("Security Briefing")
-                        .bigText("Sender: " + sender + "\n" +
-                                "Message: " + message + "\n\n" +
-                                "Analysis: " + result.logicMode + " (" + result.finalRiskScore + ")" +
-                                (result.linkWarnings.contains("No anomalies") ? "" : "\n\nAlert: " + result.linkWarnings)));
+                        .bigText("From: " + sender + "\n" + message)); // Only show the text here
 
         nm.notify(sender.hashCode(), builder.build());
     }
