@@ -218,7 +218,7 @@
                     android:alpha="0.3"
                     android:fontFamily="@font/inter_medium"
                     android:letterSpacing="0.2"
-                    android:text="v.0.0"
+                    android:text="v.3.0"
                     android:textColor="#004D5F"
                     android:textSize="10sp"/>
             </LinearLayout>

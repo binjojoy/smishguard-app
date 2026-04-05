@@ -2,6 +2,7 @@ package app.titan.smishguard;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -21,17 +22,32 @@ public class SMSReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (engine == null) engine = new SmishEngine();
 
-        // goAsync allows the receiver to stay alive for the network call (approx 10s)
         final PendingResult pendingResult = goAsync();
 
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(action)) {
-            // REAL SMS ARRIVAL
-            for (SmsMessage sms : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
-                processAndNotify(context, sms.getDisplayOriginatingAddress(), sms.getDisplayMessageBody(), pendingResult);
+            // 1. Get the array of message fragments
+            SmsMessage[] messages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+
+            if (messages != null && messages.length > 0) {
+                StringBuilder fullMessage = new StringBuilder();
+                String sender = messages[0].getDisplayOriginatingAddress();
+
+                // 2. Loop only to CONCATENATE the text
+                for (SmsMessage sms : messages) {
+                    if (sms != null) {
+                        fullMessage.append(sms.getDisplayMessageBody());
+                    }
+                }
+
+                // 3. NOW process the full, single string ONE time
+                processAndNotify(context, sender, fullMessage.toString(), pendingResult);
+            } else {
+                pendingResult.finish();
             }
+
         } else if ("app.titan.smishguard.TEST_SMS".equals(action)) {
-            // ADB COMMAND TEST
-            String sender = "ADB_TESTER";
+            // ADB COMMAND TEST (Usually single part anyway)
+            String sender = "Admin";
             String msg = intent.getStringExtra("msg");
             processAndNotify(context, sender, msg != null ? msg : "Test Message", pendingResult);
         } else {
@@ -85,36 +101,55 @@ public class SMSReceiver extends BroadcastReceiver {
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         setupChannel(nm);
 
-        int color = Color.parseColor("#004D5F"); // SmishGuard Teal
-        int icon = R.drawable.ic_shield_check;
-        String title = "✅ MESSAGE SAFE";
+        int color;
+        int smallIcon;
+        String statusTitle;
+        String securitySummary;
 
+        // Use Title Case for a cleaner, modern look
         if (verdict.equals("SCAM")) {
-            title = "🚩 SCAM DETECTED";
-            color = Color.RED;
-            icon = android.R.drawable.ic_dialog_alert;
+            statusTitle = "Scam Detected";
+            securitySummary = "High-risk smishing alert";
+            color = Color.parseColor("#B71C1C");
+            smallIcon = android.R.drawable.ic_dialog_alert;
         } else if (verdict.equals("SUSPICIOUS")) {
-            title = "⚠️ SUSPICIOUS CONTENT";
-            color = Color.parseColor("#FFA500"); // Orange
-            icon = android.R.drawable.ic_dialog_info;
+            statusTitle = "Suspicious Content";
+            securitySummary = "Potential risk identified";
+            color = Color.parseColor("#E65100");
+            smallIcon = android.R.drawable.ic_dialog_info;
+        } else {
+            statusTitle = "Message Verified";
+            securitySummary = "No threats detected";
+            color = Color.parseColor("#004D40");
+            smallIcon = R.drawable.ic_shield_check;
         }
 
-        String displayWarnings = result.linkWarnings.contains("No anomalies") ? "" : "\n\n" + result.linkWarnings;
+        Intent intent = new Intent(context, SMSFetchActivity.class);
+        PendingIntent pIntent = PendingIntent.getActivity(context, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(icon)
-                .setContentTitle(title)
-                .setContentText(result.logicMode + " | Risk: " + result.finalRiskScore)
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .setBigContentTitle(title)
-                        .bigText("From: " + sender + "\nMessage: " + message + displayWarnings))
+                .setSmallIcon(smallIcon)
+                .setSubText(securitySummary) // Sentence case for the summary
+                .setContentTitle(statusTitle) // Title case for the title
+                .setContentText("Sender: " + sender)
                 .setColor(color)
-                .setColorized(true)
+                .setColorized(verdict.equals("SCAM"))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setAutoCancel(true);
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setAutoCancel(true)
+                .setContentIntent(pIntent)
+                .addAction(new NotificationCompat.Action.Builder(
+                        android.R.drawable.ic_menu_view, "View Analysis", pIntent).build())
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .setBigContentTitle(statusTitle)
+                        .setSummaryText("Security Briefing")
+                        .bigText("Sender: " + sender + "\n" +
+                                "Message: " + message + "\n\n" +
+                                "Analysis: " + result.logicMode + " (" + result.finalRiskScore + ")" +
+                                (result.linkWarnings.contains("No anomalies") ? "" : "\n\nAlert: " + result.linkWarnings)));
 
-        nm.notify((int) System.currentTimeMillis(), builder.build());
+        nm.notify(sender.hashCode(), builder.build());
     }
 
     private void setupChannel(NotificationManager nm) {

@@ -18,6 +18,7 @@ public class HomeFragment extends Fragment {
 
     private TextView tvStatus, tvScamCount, tvMonitorLabel, tvFlaggedBrands;
     private ImageView ivStatusIcon;
+
     private ListView listView;
     private View cardRecentVerdicts; // Move this to a class variable
     private SmishRepository repo;

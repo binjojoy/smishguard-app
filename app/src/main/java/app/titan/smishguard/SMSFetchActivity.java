@@ -6,7 +6,10 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -29,6 +32,8 @@ public class SMSFetchActivity extends AppCompatActivity {
     private ImageView ivHome, ivHistory, ivInsights;
     private TextView tvHome, tvHistory, tvInsights;
 
+    private ImageButton btnSettings;
+
     // Colors
     private final int colorActive = Color.parseColor("#004D5F");
     private final int colorInactive = Color.parseColor("#94A3B8");
@@ -37,11 +42,74 @@ public class SMSFetchActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sms_fetch);
+        final View topBar = findViewById(R.id.topBar);
+        final View bottomBar = findViewById(R.id.bottomNavCard);
 
         initializeBottomNav();
-        ImageButton btnSettings = findViewById(R.id.btn_settings);
+        btnSettings = findViewById(R.id.btn_settings);
+        SettingsFragment settingsFragment = new SettingsFragment();
         btnSettings.setOnClickListener(v -> {
-            Toast.makeText(this, "Settings Clicked!", Toast.LENGTH_SHORT).show();
+            // 1. Enable Hardware Layers (GPU pre-rendering)
+            topBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            bottomBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+            // 2. Slide-out: Use AccelerateInterpolator (speeds up as it leaves)
+            topBar.animate()
+                    .translationY(-topBar.getHeight())
+                    .setDuration(175) // 250ms is the sweet spot for smoothness
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        topBar.setVisibility(View.GONE);
+                        topBar.setLayerType(View.LAYER_TYPE_NONE, null);
+                    }).start();
+
+            bottomBar.animate()
+                    .translationY(bottomBar.getHeight())
+                    .setDuration(175)
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        bottomBar.setVisibility(View.GONE);
+                        bottomBar.setLayerType(View.LAYER_TYPE_NONE, null);
+                    }).start();
+
+            // 3. Fragment Transition
+            getSupportFragmentManager().beginTransaction()
+                    .setCustomAnimations(
+                            R.anim.slide_in_right,
+                            R.anim.fade_out,
+                            R.anim.fade_in,
+                            R.anim.slide_out_right
+                    )
+                    .replace(R.id.fragment_container, new SettingsFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                topBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                bottomBar.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+                topBar.setVisibility(View.VISIBLE);
+                bottomBar.setVisibility(View.VISIBLE);
+
+                // Slide-in: Use DecelerateInterpolator (Slowing down as it arrives feels smoother)
+                topBar.animate()
+                        .translationY(0)
+                        .setDuration(280) // Slightly longer return feels more "natural"
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                        .withEndAction(() -> topBar.setLayerType(View.LAYER_TYPE_NONE, null))
+                        .start();
+
+                bottomBar.animate()
+                        .translationY(0)
+                        .setDuration(280)
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                        .withEndAction(() -> bottomBar.setLayerType(View.LAYER_TYPE_NONE, null))
+                        .start();
+
+                updateBottomNavUI(1);
+            }
         });
 
         // Start by checking permissions

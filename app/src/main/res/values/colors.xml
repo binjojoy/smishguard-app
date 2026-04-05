@@ -2,6 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
     <color name="colorPopupMainBg">#FFFFFF</color>
     <color name="colorPopupScrim">#4D1A1C1C</color>
     <color name="colorPopupScamRedIconBg">#FFDAD6</color>
@@ -13,4 +14,16 @@
     <color name="colorPopupBtnPrimaryBlue">#004D5F</color>
     <color name="colorPopupBtnPrimaryText">#FFFFFF</color>
     <color name="colorPopupBtnSecondaryGray">#F3F3F4</color>
+
+    <color name="colorSettingsBg">#F9F9F9</color>
+    <color name="colorSettingsSurface">#FFFFFF</color>
+    <color name="colorSettingsPrimary">#004D5F</color>
+    <color name="colorSettingsTextPrimary">#1A1C1C</color>
+    <color name="colorSettingsTextSecondary">#3F484C</color>
+    <color name="colorSettingsLabel">#6F797C</color>
+    <color name="colorSettingsSwitchOn">#00C853</color>
+    <color name="colorSettingsIconBgTeal">#1A004D5F</color>
+    <color name="colorSettingsIconBgGreen">#1A00C853</color>
+    <color name="colorSettingsDeleteRed">#FF5252</color>
+    <color name="colorSettingsErrorContainer">#1AFFDAD6</color>
 </resources>
