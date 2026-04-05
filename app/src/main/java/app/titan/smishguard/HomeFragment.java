@@ -19,16 +19,15 @@ public class HomeFragment extends Fragment {
     private TextView tvStatus, tvScamCount, tvMonitorLabel, tvFlaggedBrands;
     private ImageView ivStatusIcon;
     private ListView listView;
+    private View cardRecentVerdicts; // Move this to a class variable
     private SmishRepository repo;
     private SmishEngine engine;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Inflate the bento-style dashboard layout
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        // Initialize Repository and AI Engine
         repo = new SmishRepository(requireContext());
         engine = new SmishEngine();
 
@@ -37,10 +36,11 @@ public class HomeFragment extends Fragment {
         tvMonitorLabel = view.findViewById(R.id.tvMonitorLabel);
         ivStatusIcon = view.findViewById(R.id.ivStatusIcon);
         tvScamCount = view.findViewById(R.id.tvScamCount);
-        tvFlaggedBrands = view.findViewById(R.id.tvFlaggedBrands); // NEW: Dynamic brands ID
+        tvFlaggedBrands = view.findViewById(R.id.tvFlaggedBrands);
         listView = view.findViewById(R.id.smsListView);
+        cardRecentVerdicts = view.findViewById(R.id.cardRecentVerdicts); // Bind here
 
-        // 2. Initial Data Load
+        // 2. Initial Data Load - Pass the 'view' we just inflated
         updateDashboard();
 
         // 3. Perform Real-time Connection Check
@@ -50,9 +50,10 @@ public class HomeFragment extends Fragment {
     }
 
     /**
-     * Pulls the latest stats, scan history, and flagged entities from local storage.
+     * Pulls the latest stats, scan history, and flagged entities.
      */
     private void updateDashboard() {
+        // Safety check: Ensure Fragment is attached and repo exists
         if (repo == null || !isAdded()) return;
 
         // A. Update the 'Scams Caught' bento card
@@ -70,16 +71,20 @@ public class HomeFragment extends Fragment {
             tvFlaggedBrands.setText(sb.toString().trim());
         }
 
-        // C. Update the 'Recent Verdicts' list (Last 10 scans)
+        // C. Update the 'Recent Verdicts' list and Visibility
         List<String> recentData = repo.getRecentVerdicts();
-        ArrayList<String> dataList = new ArrayList<>(recentData);
-        listView.setAdapter(new SMSAdapter(requireContext(), dataList));
+
+        if (recentData.isEmpty()) {
+            if (cardRecentVerdicts != null) cardRecentVerdicts.setVisibility(View.GONE);
+        } else {
+            if (cardRecentVerdicts != null) cardRecentVerdicts.setVisibility(View.VISIBLE);
+
+            ArrayList<String> dataList = new ArrayList<>(recentData);
+            SMSAdapter adapter = new SMSAdapter(requireContext(), dataList);
+            listView.setAdapter(adapter);
+        }
     }
 
-    /**
-     * Contacts the Hugging Face server. If reachable, the UI stays Teal.
-     * If the server is down (sleeping), the UI turns Red.
-     */
     private void checkApiHealth() {
         engine.checkMessage("health_check_ping", new SmishEngine.ApiCallback() {
             @Override
@@ -94,18 +99,14 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    /**
-     * Updates the UI theme based on the API connection status.
-     */
     private void setShieldState(boolean active) {
         if (!isAdded() || getContext() == null) return;
 
         if (active) {
             tvStatus.setText("Shielded");
-            tvStatus.setTextColor(Color.parseColor("#004D5F")); // MACE Teal
+            tvStatus.setTextColor(Color.parseColor("#004D5F"));
             tvMonitorLabel.setText("ACTIVE MONITOR");
             ivStatusIcon.setImageResource(R.drawable.ic_shield_check);
-            // Ensure the orb color matches the text
             ivStatusIcon.setColorFilter(Color.WHITE);
         } else {
             tvStatus.setText("Unprotected");
@@ -119,7 +120,6 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Refresh the dashboard every time the user navigates back to Home
         updateDashboard();
     }
 }

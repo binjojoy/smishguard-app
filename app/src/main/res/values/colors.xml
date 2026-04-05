@@ -2,4 +2,15 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="colorPopupMainBg">#FFFFFF</color>
+    <color name="colorPopupScrim">#4D1A1C1C</color>
+    <color name="colorPopupScamRedIconBg">#FFDAD6</color>
+    <color name="colorPopupScamRedIcon">#BA1A1A</color>
+    <color name="colorPopupTextHeadline">#1A1C1C</color>
+    <color name="colorPopupTextDescription">#3F484C</color>
+    <color name="colorPopupDetailsCardBg">#0DFFDAD6</color>
+    <color name="colorPopupSenderLabelRed">#BA1A1A</color>
+    <color name="colorPopupBtnPrimaryBlue">#004D5F</color>
+    <color name="colorPopupBtnPrimaryText">#FFFFFF</color>
+    <color name="colorPopupBtnSecondaryGray">#F3F3F4</color>
 </resources>

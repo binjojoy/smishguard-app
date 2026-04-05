@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        app:cardBackgroundColor="@color/colorPopupMainBg"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="32dp"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="1.5dp"> <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="40dp"
+            android:paddingHorizontal="32dp"
+            android:paddingBottom="24dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="84dp"
+                android:layout_height="84dp"
+                app:cardBackgroundColor="@color/colorPopupScamRedIconBg"
+                app:cardCornerRadius="42dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_block"
+                    app:tint="@color/colorPopupScamRedIcon" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvPopupTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/manrope_bold"
+                android:text="Scam Message Detected!"
+                android:textColor="@color/colorPopupTextHeadline"
+                android:textSize="24sp"
+                android:letterSpacing="-0.04"
+                android:lineSpacingExtra="2dp" />
+
+            <TextView
+                android:id="@+id/tvPopupDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/inter_regular"
+                android:gravity="center"
+                android:text="Our AI engines have flagged a high-risk phishing attempt targeting your banking credentials."
+                android:textColor="@color/colorPopupTextDescription"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginBottom="32dp"
+            android:background="@drawable/bg_popup_details_border"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    app:cardBackgroundColor="@color/colorPopupScamRedIcon"
+                    app:cardCornerRadius="13dp"
+                    app:cardElevation="0dp">
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_person"
+                        app:tint="@color/colorPopupBtnPrimaryText" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="SENDER"
+                        android:textColor="@color/colorPopupSenderLabelRed"
+                        android:textSize="10sp"
+                        android:letterSpacing="0.2" />
+                    <TextView
+                        android:id="@+id/tvPopupSender"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/manrope_bold"
+                        android:text="+1 (888) 932-0041"
+                        android:textColor="@color/colorPopupTextHeadline"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvPopupMessageBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_popup_message_box"
+                android:fontFamily="@font/inter_regular"
+                android:padding="16dp"
+                android:text="&quot;Alert: Your account has been suspended due to suspicious activity. Please verify your identity...&quot;"
+                android:textColor="@color/colorPopupTextDescription"
+                android:textSize="14sp"
+                android:fontStyle="italic"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="32dp"
+            android:paddingBottom="40dp">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnViewDetails"
+                android:layout_width="match_parent"
+                android:layout_height="62dp"
+                android:background="@drawable/bg_popup_btn_gradient"
+                android:fontFamily="@font/manrope_bold"
+                android:text="View Security Details"
+                android:textAllCaps="false"
+                android:textColor="@color/colorPopupBtnPrimaryText"
+                android:textSize="16sp"
+                android:elevation="8dp" />
+
+            <TextView
+                android:id="@+id/btnDismiss"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:fontFamily="@font/manrope_bold"
+                android:text="Dismiss"
+                android:textColor="@color/colorPopupTextDescription"
+                android:textSize="15sp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+    </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

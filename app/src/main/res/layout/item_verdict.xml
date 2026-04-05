@@ -1,59 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#F3F3F4"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="0dp"
-    app:strokeWidth="0dp">
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="?attr/selectableItemBackground">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:id="@+id/tvSender"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/manrope_bold"
-                android:text="+1 (202) 555-0143"
-                android:textColor="#1A1C1C"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/tvVerdictBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:background="@drawable/nav_item_active_bg"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
-                android:text="SCAM"
-                android:textColor="#930010"
-                android:textSize="10sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
+        android:layout_height="wrap_content">
 
         <TextView
-            android:id="@+id/tvMessageBody"
+            android:id="@+id/tvSender"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:ellipsize="end"
-            android:fontFamily="@font/inter_regular"
-            android:maxLines="2"
-            android:text="URGENT: Your account access has been restricted..."
-            android:textColor="#3F484C"
-            android:textSize="13sp" />
+            android:fontFamily="@font/manrope_bold"
+            android:text="+1 (202) 555-0143"
+            android:textColor="#1A1C1C"
+            android:textSize="15sp" />
 
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+        <TextView
+            android:id="@+id/tvVerdictBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:fontFamily="@font/inter_medium"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:text="SCAM"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tvMessageBody"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/inter_regular"
+        android:maxLines="2"
+        android:text="URGENT: Your account access has been restricted..."
+        android:textColor="#3F484C"
+        android:textSize="13sp" />
+
+</LinearLayout>

@@ -71,79 +71,83 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:orientation="horizontal"
-            android:weightSum="2">
+            android:orientation="vertical"> <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="#F3F3F4"
+            app:cardCornerRadius="20dp"
+            app:strokeWidth="0dp">
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                app:cardBackgroundColor="#F3F3F4"
-                app:cardCornerRadius="20dp"
-                app:strokeWidth="0dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
+                android:minHeight="120dp"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_block"
+                    app:tint="#004D5F" />
+
+                <TextView
+                    android:id="@+id/tvScamCount"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_block"
-                        app:tint="#004D5F" />
-                    <TextView
-                        android:id="@+id/tvScamCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="@font/manrope_bold"
-                        android:text="0"
-                        android:textColor="#004D5F"
-                        android:textSize="32sp" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/inter_medium"
-                        android:text="SCAMS CAUGHT"
-                        android:textColor="#3F484C"
-                        android:textSize="9sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/manrope_bold"
+                    android:text="0"
+                    android:textColor="#004D5F"
+                    android:textSize="48sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_medium"
+                    android:text="TOTAL SCAMS CAUGHT"
+                    android:textColor="#3F484C"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 app:cardBackgroundColor="#F3F3F4"
                 app:cardCornerRadius="20dp"
                 app:strokeWidth="0dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="120dp"
                     android:orientation="vertical"
                     android:padding="20dp">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/manrope_bold"
                         android:text="Flagged"
                         android:textColor="#1A1C1C"
-                        android:textSize="16sp" />
+                        android:textSize="24sp" />
+
                     <TextView
                         android:id="@+id/tvFlaggedBrands"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:fontFamily="@font/inter_regular"
+                        android:lineSpacingExtra="4dp"
                         android:text="No active threats"
                         android:textColor="#3F484C"
-                        android:textSize="11sp"
-                        android:lineSpacingExtra="4dp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
 
         <TextView
@@ -153,25 +157,38 @@
             android:fontFamily="@font/manrope_bold"
             android:text="Recent Verdicts"
             android:textColor="#1A1C1C"
-            android:textSize="22sp" />
+            android:textSize="24sp" />
 
-        <ListView
-            android:id="@+id/smsListView"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardRecentVerdicts"
             android:layout_width="match_parent"
-            android:layout_height="500dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:divider="@null"
-            android:nestedScrollingEnabled="true"
-            android:scrollbars="none" />
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="#F3F3F4">
+
+            <ListView
+                android:id="@+id/smsListView"
+                android:layout_width="match_parent"
+                android:layout_height="420dp"
+                android:divider="#D1D1D1"
+                android:dividerHeight="0.8dp"
+                android:nestedScrollingEnabled="true"
+                android:scrollbars="none"
+                android:listSelector="@android:color/transparent" />
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="80dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="40dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="20dp"
             app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="24dp"
             app:strokeWidth="0dp">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -190,9 +207,20 @@
                     android:alpha="0.3"
                     android:fontFamily="@font/inter_medium"
                     android:letterSpacing="0.2"
-                    android:text="DEEP SCANNING ENGINE V2.4"
+                    android:text="Smish Engine"
                     android:textColor="#004D5F"
-                    android:textSize="10sp" />
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/model_version"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:alpha="0.3"
+                    android:fontFamily="@font/inter_medium"
+                    android:letterSpacing="0.2"
+                    android:text="v.0.0"
+                    android:textColor="#004D5F"
+                    android:textSize="10sp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -37,6 +37,9 @@ public class SmishApiModels {
 
         @SerializedName("forensic_score")
         public String forensicScore;
+
+        @SerializedName("model_version")
+        public String modelVersion;
     }
 
     // 3. THE RETROFIT INTERFACE
